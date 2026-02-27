@@ -1014,29 +1014,62 @@ export default function AudiobookDemo() {
     }
   }, []);
 
-  const convertWavToMp3ViaApi = useCallback(async (wavBuffer: ArrayBuffer): Promise<Blob> => {
-    const response = await fetch("/api/audio/mp3", {
-      method: "POST",
-      headers: {
-        "Content-Type": "audio/wav",
-      },
-      body: wavBuffer,
-    });
+  const convertAudioBufferToMp3 = useCallback(async (buffer: AudioBuffer): Promise<Blob> => {
+    type Mp3EncoderLike = {
+      encodeBuffer: (left: Int16Array, right?: Int16Array) => Int8Array;
+      flush: () => Int8Array;
+    };
 
-    if (!response.ok) {
-      let message = "Failed to convert WAV to MP3.";
-      try {
-        const data = (await response.json()) as { error?: string };
-        if (data?.error) {
-          message = data.error;
-        }
-      } catch {
-        // Ignore JSON parsing errors.
-      }
-      throw new Error(message);
+    type Mp3EncoderCtor = new (channels: number, sampleRate: number, kbps: number) => Mp3EncoderLike;
+
+    const lameModule = await import("lamejs");
+    const moduleWithCtor = lameModule as unknown as {
+      Mp3Encoder?: Mp3EncoderCtor;
+      default?: { Mp3Encoder?: Mp3EncoderCtor };
+    };
+    const Mp3Encoder = moduleWithCtor.Mp3Encoder ?? moduleWithCtor.default?.Mp3Encoder;
+
+    if (!Mp3Encoder) {
+      throw new Error("MP3 encoder is unavailable in this build.");
     }
 
-    return response.blob();
+    const channels = Math.max(1, Math.min(2, buffer.numberOfChannels));
+    const encoder = new Mp3Encoder(channels, buffer.sampleRate, 128);
+    const frameSize = 1152;
+    const encodedChunks: Uint8Array[] = [];
+
+    const leftChannel = buffer.getChannelData(0);
+    const rightChannel = channels === 2 ? buffer.getChannelData(1) : null;
+
+    for (let offset = 0; offset < buffer.length; offset += frameSize) {
+      const frameLength = Math.min(frameSize, buffer.length - offset);
+      const left = new Int16Array(frameLength);
+      const right = channels === 2 ? new Int16Array(frameLength) : null;
+
+      for (let i = 0; i < frameLength; i += 1) {
+        const leftSample = Math.max(-1, Math.min(1, leftChannel[offset + i] ?? 0));
+        left[i] = leftSample < 0 ? Math.round(leftSample * 0x8000) : Math.round(leftSample * 0x7fff);
+        if (right) {
+          const rightSample = Math.max(-1, Math.min(1, rightChannel?.[offset + i] ?? 0));
+          right[i] = rightSample < 0 ? Math.round(rightSample * 0x8000) : Math.round(rightSample * 0x7fff);
+        }
+      }
+
+      const encoded = channels === 2 && right ? encoder.encodeBuffer(left, right) : encoder.encodeBuffer(left);
+      if (encoded.length > 0) {
+        encodedChunks.push(new Uint8Array(encoded));
+      }
+    }
+
+    const end = encoder.flush();
+    if (end.length > 0) {
+      encodedChunks.push(new Uint8Array(end));
+    }
+
+    const blobParts = encodedChunks.map(
+      (chunk) => chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength) as ArrayBuffer,
+    );
+    return new Blob(blobParts, { type: "audio/mpeg" });
   }, []);
 
   const ensureTtsLoaded = useCallback(async () => {
@@ -1194,8 +1227,7 @@ export default function AudiobookDemo() {
         const stitchedBuffer = await stitchAudioBlobsToAudioBuffer(splitChunkAudios.map((item) => item.blob));
         const safeTitle = sanitizeFileNamePart(chapter.title) || `split_${chapter.index}`;
         if (outputAudioFormat === "mp3") {
-          const wavBuffer = audioBufferToWav(stitchedBuffer);
-          const splitMp3Blob = await convertWavToMp3ViaApi(wavBuffer);
+          const splitMp3Blob = await convertAudioBufferToMp3(stitchedBuffer);
           zip.file(`${safeTitle}.mp3`, splitMp3Blob);
         } else {
           const wavBuffer = audioBufferToWav(stitchedBuffer);
@@ -1245,7 +1277,7 @@ export default function AudiobookDemo() {
     } finally {
       setIsGeneratingPreview(false);
     }
-  }, [buildTtsChunksForChapter, clearGeneratedAudio, convertWavToMp3ViaApi, outputAudioFormat, preprocessTextForKokoro, result, selectedSplitIndexes, stitchAudioBlobsToAudioBuffer, synthesizeChunkAudios]);
+  }, [buildTtsChunksForChapter, clearGeneratedAudio, convertAudioBufferToMp3, outputAudioFormat, preprocessTextForKokoro, result, selectedSplitIndexes, stitchAudioBlobsToAudioBuffer, synthesizeChunkAudios]);
 
   const getChapterPreviewText = (text: string) => {
     const normalized = text.replace(/\s+/g, " ").trim();
