@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+generated-audio/
 
 # debug
 npm-debug.log*

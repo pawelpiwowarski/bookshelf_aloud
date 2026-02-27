@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-primary: #faf6eb;
+  --bg-card: #fff9f0;
+  --bg-muted: #f5ece0;
+  --text-primary: #2c1810;
+  --text-secondary: #6b5744;
+  --text-muted: #9a8b78;
+  --border: #d4c5a9;
+  --accent-gold: #b8860b;
+  --accent-gold-hover: #9a7209;
+  --accent-success: #2d6a4f;
+  --accent-danger: #9b2c2c;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-lora);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-lora), Georgia, 'Times New Roman', serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* === Animations === */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fadeSlideIn {
+  animation: fadeSlideIn 0.5s ease-out;
+}
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* === Progress bar shimmer === */
+.progress-bar {
+  background: linear-gradient(90deg, #b8860b, #d4a745, #b8860b);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background-color: #d4c5a9;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #b8a88e;
+}
+
+/* === Selection === */
+::selection {
+  background: rgba(184, 134, 11, 0.2);
+  color: #2c1810;
+}
+
+/* === Audio element styling === */
+audio::-webkit-media-controls-panel {
+  background: #f5ece0;
+}
+
+/* === Select styling === */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b5744' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
 }

@@ -6,9 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate:voice-samples": "tsx scripts/generate-voice-samples.ts",
+    "generate:book-audio": "tsx scripts/generate-book-audio.ts"
   },
   "dependencies": {
+    "@mlc-ai/web-llm": "^0.2.81",
+    "jszip": "^3.10.1",
+    "kokoro-js": "^1.2.1",
+    "lamejs": "github:zhuker/lamejs",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
@@ -21,6 +27,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
