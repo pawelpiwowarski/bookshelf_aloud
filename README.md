@@ -4,6 +4,10 @@ Bookshelf Aloud is a browser-based audiobook generator.
 
 It lets you import book text, split it into chapters, choose a voice, and generate downloadable audiobook files directly in your browser using Kokoro TTS.
 
+## Live demo
+
+https://bookshelf-aloud.vercel.app/
+
 ![Bookshelf Aloud UI](./page.png)
 
 ## Purpose
